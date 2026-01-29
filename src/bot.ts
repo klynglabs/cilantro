@@ -46,6 +46,9 @@ export class Bot {
         case 'LoggedInElsewhere':
           this.logger.error('Logged in from another client')
           break
+        case 'LogonSessionReplaced':
+          this.logger.warn('Session replaced by another instance')
+          process.exit(0)
         default:
           this.logger.error(error.message)
       }
