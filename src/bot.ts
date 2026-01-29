@@ -59,10 +59,14 @@ export class Bot {
       this.play()
     })
 
-    this.steam.on('steamGuard', (_, callback) => {
-      this.logger.warn('Steam Guard code required')
-      const code = prompt('Code:') || process.exit(1)
-      callback(code)
+    this.steam.on('steamGuard', async (_, callback) => {
+      this.logger.warn('Enter Steam Guard code')
+      for await (const line of console) {
+        if (!line) process.exit(1)
+        callback(line)
+        console.clear()
+        break
+      }
     })
 
     this.steam.on('refreshToken', (token) =>
