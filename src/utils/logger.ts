@@ -6,7 +6,7 @@ type Level = 'debug' | 'log' | 'warn' | 'error'
 
 const levels: Record<Level, ChalkInstance> = {
   debug: chalk.magentaBright,
-  log: chalk.blueBright,
+  log: chalk.white,
   warn: chalk.yellowBright,
   error: chalk.redBright,
 }

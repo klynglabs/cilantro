@@ -23,33 +23,28 @@ export class Bot {
 
   constructor(private readonly options: BotOptions) {
     this.logger = new Logger(options.username.toLowerCase())
-
     this.steam = new Steam({
       autoRelogin: false,
       dataDirectory: convertRelativePath(config.steamData),
       protocol: EConnectionProtocol.TCP,
     })
-
     this.bindEvents()
   }
 
   async start(): Promise<void> {
     this.logger.log('Logging in...')
     this.steam.logOn(await this.getCredentials())
-
     await Promise.race([
       once(this.steam, 'loggedOn'),
       once(this.steam, 'error').then(([err]) => {
         throw err
       }),
     ])
-
     if (this.options.online) this.steam.setPersona(Steam.EPersonaState.Online)
   }
 
   async stop(): Promise<void> {
     if (!this.steam.steamID) return
-
     this.steam.logOff()
     await once(this.steam, 'disconnected')
   }
@@ -73,20 +68,6 @@ export class Bot {
     this.steam.on('refreshToken', (token) =>
       this.tokens.set(this.options.username, token),
     )
-  }
-
-  private async login(): Promise<void> {
-    this.logger.log('Logging in...')
-    this.steam.logOn(await this.getCredentials())
-
-    await Promise.race([
-      once(this.steam, 'loggedOn'),
-      once(this.steam, 'error').then(([err]) => {
-        throw err
-      }),
-    ])
-
-    if (this.options.online) this.steam.setPersona(Steam.EPersonaState.Online)
   }
 
   private async getCredentials(): Promise<Parameters<Steam['logOn']>[0]> {
@@ -113,33 +94,27 @@ export class Bot {
   private handleError(error: Error): void {
     switch (error.message) {
       case 'LogonSessionReplaced':
-        this.logger.error('Session replaced by another instance')
+        this.logger.error('Session replaced')
         return process.exit(1)
-
       case 'InvalidPassword':
         this.logger.error('Invalid credentials')
-        return process.exit(1) // Avoid rate-limit
-
+        return process.exit(1)
       case 'LoggedInElsewhere':
-        this.logger.warn('Logged in from another client')
+        this.logger.warn('Logged in elsewhere')
         break
-
       case 'NoConnection':
         this.logger.error('Connection dropped')
         break
-
       default:
         this.logger.error(error.message)
     }
-
     void this.reconnect()
   }
 
   private async reconnect(): Promise<void> {
     try {
       await this.stop()
-
-      await withRetry(() => this.login(), {
+      await withRetry(() => this.start(), {
         attempts: 10,
         delayMs: 10_000,
         factor: 2,
