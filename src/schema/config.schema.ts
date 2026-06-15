@@ -1,11 +1,11 @@
-import { z } from 'zod'
+import { z } from "zod";
 
-import { AccountSchema } from '@/schema/account.schema'
+import { AccountSchema } from "@/schema/account.schema";
 
 export const ConfigSchema = z.object({
+  accounts: z.array(AccountSchema),
   steamData: z.string(),
   tokens: z.string(),
-  accounts: z.array(AccountSchema),
-})
+});
 
-export type Config = z.infer<typeof ConfigSchema>
+export type Config = z.infer<typeof ConfigSchema>;

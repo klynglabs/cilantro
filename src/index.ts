@@ -1,15 +1,18 @@
-import { Bot } from '@/bot'
-import { config } from '@/config'
+import { Bot } from "@/bot";
+import { config } from "@/config";
+import { TokenService } from "@/services/token.service";
+
+const tokens = new TokenService(config.tokens);
 
 const bots = await Promise.all(
-  config.accounts.map(async (acc) => {
-    const bot = new Bot(acc)
-    await bot.start()
-    return bot
+  config.accounts.map(async (account) => {
+    const bot = new Bot(account, tokens, config.steamData);
+    await bot.start();
+    return bot;
   }),
-)
+);
 
-process.on('SIGINT', async () => {
-  await Promise.all(bots.map((b) => b.stop()))
-  process.exit(0)
-})
+process.on("SIGINT", async () => {
+  await Promise.all(bots.map((bot) => bot.stop()));
+  process.exit(0);
+});

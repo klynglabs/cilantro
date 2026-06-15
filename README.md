@@ -48,22 +48,7 @@ If your account has Steam Guard enabled, you'll be prompted for a code on first 
 
 ## Configuration
 
-Edit `src/config.ts`:
-
-```ts
-const config: Config = {
-  // ...
-  accounts: [
-    {
-      username: Bun.env.STEAM_ACCOUNT_USERNAME!,
-      password: Bun.env.STEAM_ACCOUNT_PASSWORD!,
-      games: [730],
-      online: true, // false by default
-    },
-  ],
-  // ...
-}
-```
+Rename `config.example.json` to `config.json` and edit it:
 
 Find game IDs on [SteamDB](https://steamdb.info/).
 

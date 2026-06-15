@@ -1,0 +1,12 @@
+{
+  "steamData": "./.steam",
+  "tokens": "./.tokens",
+  "accounts": [
+    {
+      "username": "STEAM_ACCOUNT_USERNAME",
+      "password": "STEAM_ACCOUNT_PASSWORD",
+      "games": [730],
+      "online": true
+    }
+  ]
+}

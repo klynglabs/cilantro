@@ -1,15 +1,18 @@
-import type { Config } from '@/schema/config.schema'
+import { ConfigSchema } from "@/schema/config.schema";
+import { resolveEnv } from "@/utils/resolve-env";
 
-const config: Config = {
-  steamData: './.steam',
-  tokens: './.tokens',
-  accounts: [
-    {
-      username: Bun.env.STEAM_ACCOUNT_USERNAME!,
-      password: Bun.env.STEAM_ACCOUNT_PASSWORD!,
-      games: [730],
-    },
-  ],
+import configFile from "../config.json";
+
+if (!configFile.accounts) {
+  throw new Error("No accounts found in config file");
 }
 
-export { config }
+export const config = ConfigSchema.parse({
+  accounts: configFile.accounts.map((account) => ({
+    ...account,
+    username: resolveEnv(account.username),
+    password: resolveEnv(account.password),
+  })),
+  steamData: configFile.steamData,
+  tokens: configFile.tokens,
+});

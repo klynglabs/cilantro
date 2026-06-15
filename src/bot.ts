@@ -1,129 +1,89 @@
-import { once } from 'events'
+import { once } from "node:events";
 
-import Steam, { EConnectionProtocol } from 'steam-user'
+import Steam, { EConnectionProtocol } from "steam-user";
 
-import { config } from '@/config'
-import { Logger } from '@/utils/logger'
-import { convertRelativePath } from '@/utils/path'
-import { withRetry } from '@/utils/retry'
-import { TokenStorage } from '@/utils/tokens'
-
-export interface BotOptions {
-  username: string
-  password: string
-  games: readonly number[]
-  online?: boolean
-}
+import type { Account } from "@/schema/account.schema";
+import { SteamEvents } from "@/events/steam.events";
+import { TokenService } from "@/services/token.service";
+import { Logger } from "@/utils/logger";
+import { convertRelativePath } from "@/utils/path";
+import { withRetry } from "@/utils/retry";
 
 export class Bot {
-  private readonly tokens = new TokenStorage()
-  private readonly logger: Logger
-  private readonly steam: Steam
-  private isBlocked = false
+  readonly logger: Logger;
+  readonly steam: Steam;
 
-  constructor(private readonly options: BotOptions) {
-    this.logger = new Logger(options.username.toLowerCase())
+  constructor(
+    readonly account: Account,
+    readonly tokens: TokenService,
+    steamDataPath: string,
+  ) {
+    this.logger = new Logger(account.username.toLowerCase());
+
     this.steam = new Steam({
       autoRelogin: false,
-      dataDirectory: convertRelativePath(config.steamData),
+      dataDirectory: convertRelativePath(steamDataPath),
       protocol: EConnectionProtocol.TCP,
-    })
-    this.bindEvents()
+    });
+
+    new SteamEvents(this).bind();
   }
 
   async start(): Promise<void> {
-    this.logger.log('Logging in...')
-    this.steam.logOn(await this.getCredentials())
+    this.logger.log("Logging in...");
+    this.steam.logOn(await this.getCredentials());
+
     await Promise.race([
-      once(this.steam, 'loggedOn'),
-      once(this.steam, 'error').then(([err]) => {
-        throw err
+      once(this.steam, "loggedOn"),
+      once(this.steam, "error").then(([error]) => {
+        throw error;
       }),
-    ])
-    if (this.options.online) this.steam.setPersona(Steam.EPersonaState.Online)
+    ]);
+
+    if (this.account.online) this.steam.setPersona(Steam.EPersonaState.Online);
   }
 
   async stop(): Promise<void> {
-    if (!this.steam.steamID) return
-    this.steam.logOff()
-    await once(this.steam, 'disconnected')
+    if (!this.steam.steamID) return;
+    this.steam.logOff();
+    await once(this.steam, "disconnected");
   }
 
-  private bindEvents(): void {
-    this.steam.on('error', (err) => this.handleError(err))
-    this.steam.on('playingState', (blocked, appId) => {
-      this.isBlocked = blocked
-      if (!blocked && appId !== 0) return
-      this.syncGames()
-    })
-    this.steam.on('steamGuard', async (_, callback) => {
-      this.logger.warn('Enter Steam Guard code')
-      for await (const line of console) {
-        const code = line?.trim()
-        if (!code) process.exit(1)
-        callback(code)
-        break
-      }
-    })
-    this.steam.on('refreshToken', (token) =>
-      this.tokens.set(this.options.username, token),
-    )
+  syncGames(blocked: boolean): void {
+    this.steam.gamesPlayed(blocked ? [] : [...this.account.games]);
+    if (!blocked) this.logger.log(`Playing ${this.account.games.length} game(s)`);
   }
 
-  private async getCredentials(): Promise<Parameters<Steam['logOn']>[0]> {
-    const token = await this.tokens.get(this.options.username)
-    if (token) {
-      return {
-        refreshToken: token,
-        renewRefreshTokens: true,
-      } as Steam.LogOnDetailsRefresh
-    }
-    return {
-      accountName: this.options.username,
-      password: this.options.password,
-      renewRefreshTokens: true,
-    } as Steam.LogOnDetailsNamePass
-  }
-
-  private syncGames(): void {
-    this.steam.gamesPlayed(this.isBlocked ? [] : [...this.options.games])
-    if (!this.isBlocked)
-      this.logger.log(`Playing ${this.options.games.length} game(s)`)
-  }
-
-  private handleError(error: Error): void {
-    switch (error.message) {
-      case 'LogonSessionReplaced':
-        this.logger.error('Session replaced')
-        return process.exit(1)
-      case 'InvalidPassword':
-        this.logger.error('Invalid credentials')
-        return process.exit(1)
-      case 'LoggedInElsewhere':
-        this.logger.warn('Logged in elsewhere')
-        break
-      case 'NoConnection':
-        this.logger.error('Connection dropped')
-        break
-      default:
-        this.logger.error(error.message)
-    }
-    void this.reconnect()
-  }
-
-  private async reconnect(): Promise<void> {
+  async reconnect(): Promise<void> {
     try {
-      await this.stop()
+      await this.stop();
       await withRetry(() => this.start(), {
         attempts: 10,
         delayMs: 10_000,
         factor: 2,
-        onRetry: (i, delay) =>
-          this.logger.warn(`Retry ${i}/10 in ${delay / 1_000}s...`),
-      })
+        onRetry: (attempt, total, delay) =>
+          this.logger.warn(`Retry ${attempt}/${total} in ${delay / 1_000}s...`),
+      });
     } catch {
-      this.logger.error('Failed to reconnect')
-      this.steam.logOff()
+      this.logger.error("Failed to reconnect");
+      this.steam.logOff();
     }
+  }
+
+  private async getCredentials(): Promise<Steam.LogOnDetailsRefresh | Steam.LogOnDetailsNamePass> {
+    const token = await this.tokens.get(this.account.username);
+
+    if (token) {
+      return {
+        refreshToken: token,
+        renewRefreshTokens: true,
+      } as Steam.LogOnDetailsRefresh;
+    }
+
+    return {
+      accountName: this.account.username,
+      password: this.account.password,
+      renewRefreshTokens: true,
+    } as Steam.LogOnDetailsNamePass;
   }
 }
