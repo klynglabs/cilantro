@@ -9,7 +9,7 @@ your row when done.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| [001](001-delete-stale-token-on-auth-error.md) | Delete stale token on auth error | P1 | S | — | TODO |
+| [001](001-delete-stale-token-on-auth-error.md) | Delete stale token on auth error | P1 | S | — | DONE |
 | [002](002-steam-guard-stdin-fixes.md) | Fix Steam Guard stdin — serialize reads + handle closed stdin | P1 | M | 001 | TODO |
 | [003](003-readme-quickstart-and-typecheck-script.md) | Add config.json setup step to README + typecheck script | P2 | S | — | TODO |
 
