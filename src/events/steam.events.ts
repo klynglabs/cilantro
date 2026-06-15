@@ -1,6 +1,7 @@
 import type Steam from "steam-user";
-
 import type { Bot } from "@/bot";
+
+import { withStdinLock } from "@/utils/stdin-lock";
 
 type EventHandler<K extends keyof Steam.Events> = (
   ...args: Steam.Events[K]
@@ -66,14 +67,23 @@ export class SteamEvents {
     _domain: string | null,
     callback: (code: string) => void,
   ): Promise<void> {
-    this.bot.logger.warn("Enter Steam Guard code");
+    await withStdinLock(async () => {
+      this.bot.logger.warn("Enter Steam Guard code");
 
-    for await (const line of console) {
-      const code = line?.trim();
-      if (!code) process.exit(1);
-      callback(code);
-      break;
-    }
+      let provided = false;
+      for await (const line of console) {
+        const code = line?.trim();
+        if (!code) process.exit(1);
+        callback(code);
+        provided = true;
+        break;
+      }
+
+      if (!provided) {
+        this.bot.logger.error("Steam Guard: stdin is closed, cannot read code");
+        process.exit(1);
+      }
+    });
   }
 
   private async onRefreshToken(token: string): Promise<void> {
