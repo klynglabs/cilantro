@@ -21,6 +21,7 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "build": "bun build src/index.ts --target=bun --minify --packages=external --outfile=build/index.js",
+    "build:exe": "bun build src/index.ts --compile --target=bun-windows-x64-modern --minify --packages=external --outfile=cilantro",
     "start": "bun build/index.js",
     "format": "bunx prettier . --write"
   },
