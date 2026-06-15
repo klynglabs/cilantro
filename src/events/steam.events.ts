@@ -41,6 +41,7 @@ export class SteamEvents {
         return process.exit(1);
       case "InvalidPassword":
         this.bot.logger.error("Invalid credentials");
+        await this.bot.tokens.del(this.bot.account.username);
         return process.exit(1);
       case "LoggedInElsewhere":
         this.bot.logger.warn("Logged in elsewhere");
@@ -50,6 +51,7 @@ export class SteamEvents {
         break;
       default:
         this.bot.logger.error(error.message);
+        await this.bot.tokens.del(this.bot.account.username);
     }
 
     await this.bot.reconnect();
