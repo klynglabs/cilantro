@@ -10,7 +10,7 @@ your row when done.
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
 | [001](001-delete-stale-token-on-auth-error.md) | Delete stale token on auth error | P1 | S | — | DONE |
-| [002](002-steam-guard-stdin-fixes.md) | Fix Steam Guard stdin — serialize reads + handle closed stdin | P1 | M | 001 | TODO |
+| [002](002-steam-guard-stdin-fixes.md) | Fix Steam Guard stdin — serialize reads + handle closed stdin | P1 | M | 001 | DONE |
 | [003](003-readme-quickstart-and-typecheck-script.md) | Add config.json setup step to README + typecheck script | P2 | S | — | TODO |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` (add one-line reason) | `REJECTED` (add one-line rationale)
