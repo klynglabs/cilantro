@@ -45,4 +45,8 @@ describe("TokenService", () => {
     await tokens.del("alice");
     expect(await tokens.get("alice")).toBeUndefined();
   });
+
+  test("deleting a missing token does not throw", async () => {
+    await expect(tokens.del("alice")).resolves.toBeUndefined();
+  });
 });

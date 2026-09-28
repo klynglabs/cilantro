@@ -1,4 +1,5 @@
 import { mkdirSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import { convertRelativePath } from "@/utils/path";
@@ -25,7 +26,7 @@ export class TokenService {
   }
 
   async del(username: string): Promise<void> {
-    await Bun.file(this.path(username)).delete();
+    await rm(this.path(username), { force: true });
   }
 
   private path(username: string): string {
