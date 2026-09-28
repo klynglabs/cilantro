@@ -1,5 +1,4 @@
 import type { ChalkInstance } from "chalk";
-
 import chalk from "chalk";
 
 type Level = "debug" | "log" | "warn" | "error";

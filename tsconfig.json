@@ -3,9 +3,9 @@
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "@/*": ["./src/*"],
-    },
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "build"],
+  "exclude": ["node_modules", "build"]
 }

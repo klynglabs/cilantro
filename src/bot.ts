@@ -2,8 +2,8 @@ import { once } from "node:events";
 
 import Steam, { EConnectionProtocol } from "steam-user";
 
-import type { Account } from "@/schema/account.schema";
 import { SteamEvents } from "@/events/steam.events";
+import type { Account } from "@/schema/account.schema";
 import { TokenService } from "@/services/token.service";
 import { Logger } from "@/utils/logger";
 import { convertRelativePath } from "@/utils/path";

@@ -1,6 +1,6 @@
 import type Steam from "steam-user";
-import type { Bot } from "@/bot";
 
+import type { Bot } from "@/bot";
 import { withStdinLock } from "@/utils/stdin-lock";
 
 type EventHandler<K extends keyof Steam.Events> = (
