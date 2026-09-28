@@ -20,8 +20,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts --target=bun --minify --packages=external --outfile=build/index.js",
-    "build:exe": "bun build src/index.ts --compile --target=bun-windows-x64-modern --minify --packages=external --outfile=cilantro",
+    "build": "bun scripts/build.ts",
+    "compile": "bun scripts/compile.ts",
     "start": "bun build/index.js",
     "format": "bunx prettier . --write"
   },
@@ -32,8 +32,8 @@
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
-    "@tsconfig/bun": "^1.0.10",
-    "@types/bun": "^1.3.14",
+    "@tsconfig/bun": "^1.0.11",
+    "@types/bun": "^1.4.2",
     "@types/steam-user": "5.1.0",
     "typescript": "^5.9.3"
   },

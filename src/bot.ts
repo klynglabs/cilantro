@@ -23,7 +23,7 @@ export class Bot {
     this.steam = new Steam({
       autoRelogin: false,
       dataDirectory: convertRelativePath(steamDataPath),
-      protocol: EConnectionProtocol.TCP,
+      protocol: EConnectionProtocol.WebSocket,
     });
 
     new SteamEvents(this).bind();
