@@ -18,3 +18,9 @@ const KEEP_TOKEN_RESULTS = new Set([
 export function invalidatesToken({ eresult }: SteamError): boolean {
   return eresult !== undefined && !KEEP_TOKEN_RESULTS.has(eresult);
 }
+
+export function isFatal({ eresult }: SteamError): boolean {
+  return (
+    eresult === Steam.EResult.InvalidPassword || eresult === Steam.EResult.LogonSessionReplaced
+  );
+}

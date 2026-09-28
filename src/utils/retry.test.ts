@@ -44,4 +44,13 @@ describe("withRetry", () => {
       [2, 3, 2],
     ]);
   });
+
+  test("stops when shouldRetry returns false", async () => {
+    const fn = mock(async () => {
+      throw new Error("fatal");
+    });
+
+    await expect(withRetry(fn, { ...options, shouldRetry: () => false })).rejects.toThrow("fatal");
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
 });
