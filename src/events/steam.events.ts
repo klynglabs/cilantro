@@ -1,7 +1,9 @@
-import type Steam from "steam-user";
+import Steam from "steam-user";
 
 import type { Bot } from "@/bot";
 import { withStdinLock } from "@/utils/stdin-lock";
+import type { SteamError } from "@/utils/steam-error";
+import { invalidatesToken } from "@/utils/steam-error";
 
 type EventHandler<K extends keyof Steam.Events> = (
   ...args: Steam.Events[K]
@@ -35,24 +37,24 @@ export class SteamEvents {
     }
   }
 
-  private async onError(error: Error): Promise<void> {
-    switch (error.message) {
-      case "LogonSessionReplaced":
+  private async onError(error: SteamError): Promise<void> {
+    switch (error.eresult) {
+      case Steam.EResult.LogonSessionReplaced:
         this.bot.logger.error("Session replaced");
         return process.exit(1);
-      case "InvalidPassword":
+      case Steam.EResult.InvalidPassword:
         this.bot.logger.error("Invalid credentials");
         await this.bot.tokens.del(this.bot.account.username);
         return process.exit(1);
-      case "LoggedInElsewhere":
+      case Steam.EResult.LoggedInElsewhere:
         this.bot.logger.warn("Logged in elsewhere");
         break;
-      case "NoConnection":
+      case Steam.EResult.NoConnection:
         this.bot.logger.error("Connection dropped");
         break;
       default:
         this.bot.logger.error(error.message);
-        await this.bot.tokens.del(this.bot.account.username);
+        if (invalidatesToken(error)) await this.bot.tokens.del(this.bot.account.username);
     }
 
     await this.bot.reconnect();
