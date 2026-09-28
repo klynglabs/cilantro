@@ -17,10 +17,13 @@ bun run dev
 
 ## Before Submitting
 
-Format your code:
+Format, lint, typecheck and test your code:
 
 ```bash
 bun run format
+bun run lint
+bun run typecheck
+bun run test
 ```
 
 ## Commits
