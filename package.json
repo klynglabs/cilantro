@@ -23,7 +23,9 @@
     "build": "bun scripts/build.ts",
     "compile": "bun scripts/compile.ts",
     "start": "bun build/index.js",
-    "format": "bunx prettier . --write"
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint --deny-warnings"
   },
   "dependencies": {
     "chalk": "^5.6.2",
@@ -31,10 +33,11 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@tsconfig/bun": "^1.0.11",
     "@types/bun": "^1.4.2",
     "@types/steam-user": "5.1.0",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
     "typescript": "^5.9.3"
   },
   "engines": {
