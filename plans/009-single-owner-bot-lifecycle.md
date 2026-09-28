@@ -468,7 +468,10 @@ Notes for the executor:
 
 ### Step 4: Rewrite the lifecycle in `src/bot.ts`
 
-1. Imports become:
+1. Imports become the set below. `.oxfmtrc.json` has `sortImports: true`, so
+   the committed order differs from this listing (type imports are sorted
+   inline with value imports, e.g. `import type { Account }` sits among the
+   `@/` imports). Run `bun run format` after editing and accept its order.
 
    ```ts
    import type { Account } from "@/schema/account.schema";
@@ -591,7 +594,8 @@ Notes for the executor:
 In `src/events/steam.events.ts`:
 - delete the `error: this.onError.bind(this),` entry from `handlers`;
 - delete the whole `onError` method;
-- imports become:
+- imports become the set below (`Steam` is now only used as a type); run
+  `bun run format` afterwards and accept its import order:
 
   ```ts
   import type { Bot } from "@/bot";

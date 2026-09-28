@@ -29,8 +29,8 @@ documents copying `config.example.json` to `config.json`.
 | [005](005-verification-baseline.md) | Add `typecheck` and `test` scripts with a first unit-test suite | P1 | S | 004 | DONE (merged) |
 | [006](006-logger-errors-and-idempotent-token-delete.md) | Log Errors with their stack; make deleting a missing token a no-op | P1 | S | 005 | DONE (merged) |
 | [007](007-load-config-at-runtime.md) | Read `config.json` at runtime instead of bundling it into the build | P1 | S | 005 | DONE (merged) |
-| [008](008-token-policy-by-eresult.md) | Only delete the saved login token when Steam actually rejected it | P1 | S | 006 | DONE (branch `advisor/008-token-policy-by-eresult`, commit `b1f041e`, awaiting merge) |
-| [009](009-single-owner-bot-lifecycle.md) | Give each bot one owner for login, errors and reconnects | P1 | M | 005, 006, 008 | TODO |
+| [008](008-token-policy-by-eresult.md) | Only delete the saved login token when Steam actually rejected it | P1 | S | 006 | DONE (merged, `b1f041e`) |
+| [009](009-single-owner-bot-lifecycle.md) | Give each bot one owner for login, errors and reconnects | P1 | M | 005, 006, 008 | DONE (branch `worktree-agent-a386d44f87055edce`, commits `551ddb6` `249fdd4`, awaiting merge) |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` (add one-line reason) | `REJECTED` (add one-line rationale)
 
