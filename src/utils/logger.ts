@@ -31,6 +31,7 @@ function stringToColor(str: string): ChalkInstance {
 }
 
 function format(value: unknown): string {
+  if (value instanceof Error) return value.stack ?? value.message;
   if (value == null) return String(value);
   if (typeof value !== "object") return String(value);
   try {
