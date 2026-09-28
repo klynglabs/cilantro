@@ -25,8 +25,8 @@ documents copying `config.example.json` to `config.json`.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| [004](004-align-formatter-with-code.md) | Replace Prettier with oxfmt + oxlint, matching the existing code style | P2 | S | — | DONE (branch `advisor/004-oxfmt-oxlint`, awaiting merge) |
-| [005](005-verification-baseline.md) | Add `typecheck` and `test` scripts with a first unit-test suite | P1 | S | 004 | TODO |
+| [004](004-align-formatter-with-code.md) | Replace Prettier with oxfmt + oxlint, matching the existing code style | P2 | S | — | DONE (merged) |
+| [005](005-verification-baseline.md) | Add `typecheck` and `test` scripts with a first unit-test suite | P1 | S | 004 | DONE (branch `advisor/005-verification-baseline`, awaiting merge) |
 | [006](006-logger-errors-and-idempotent-token-delete.md) | Log Errors with their stack; make deleting a missing token a no-op | P1 | S | 005 | TODO |
 | [007](007-load-config-at-runtime.md) | Read `config.json` at runtime instead of bundling it into the build | P1 | S | 005 | TODO |
 | [008](008-token-policy-by-eresult.md) | Only delete the saved login token when Steam actually rejected it | P1 | S | 006 | TODO |
