@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
-import { EventEmitter } from "node:events";
+import { beforeEach, describe, expect, mock, spyOn, test } from "bun:test"
+import { EventEmitter } from "node:events"
 
-import type { TokenService } from "@/services/token.service";
+import type { TokenService } from "@/services/token.service"
 
 class FakeSteam extends EventEmitter {
   static EResult = {
@@ -19,114 +19,149 @@ class FakeSteam extends EventEmitter {
     LogonSessionReplaced: 34,
     TryAnotherCM: 48,
     RateLimitExceeded: 84,
-  };
-  static EPersonaState = { Online: 1 };
-  static outcomes: (number | "ok")[] = [];
+  }
+  static EPersonaState = { Online: 1 }
+  static outcomes: (number | "ok")[] = []
 
-  steamID: object | null = null;
-  logOnCalls = 0;
+  steamID: object | null = null
+  logOnCalls = 0
 
   logOn() {
-    this.logOnCalls++;
-    const outcome = FakeSteam.outcomes.shift() ?? "ok";
+    this.logOnCalls++
+    const outcome = FakeSteam.outcomes.shift() ?? "ok"
     setTimeout(() => {
-      if (outcome !== "ok") return this.fail(outcome);
-      this.steamID = {};
-      this.emit("loggedOn");
-    }, 0);
+      if (outcome !== "ok") return this.fail(outcome)
+      this.steamID = {}
+      this.emit("loggedOn")
+    }, 0)
   }
 
   fail(eresult: number) {
-    this.emit("error", Object.assign(new Error(`EResult ${eresult}`), { eresult }));
-    this.steamID = null;
+    this.emit(
+      "error",
+      Object.assign(new Error(`EResult ${eresult}`), { eresult }),
+    )
+    this.steamID = null
   }
 
   logOff() {
-    this.steamID = null;
-    setTimeout(() => this.emit("disconnected"), 0);
+    this.steamID = null
+    setTimeout(() => this.emit("disconnected"), 0)
   }
 
   setPersona() {}
   gamesPlayed() {}
+
+  async getProductInfo(apps: number[]) {
+    return {
+      apps: { [apps[0]!]: { appinfo: { common: { name: "Destiny 2" } } } },
+    }
+  }
 }
 
-mock.module("steam-user", () => ({ default: FakeSteam, EConnectionProtocol: { WebSocket: 2 } }));
-spyOn(console, "log").mockImplementation(() => {});
+mock.module("steam-user", () => ({
+  default: FakeSteam,
+  EConnectionProtocol: { WebSocket: 2 },
+}))
+const consoleLog = spyOn(console, "log").mockImplementation(() => {})
 
-const { Bot } = await import("@/bot");
+const { Bot } = await import("@/bot")
 
-const account = { username: "alice", password: "secret", games: [730], online: false };
-const del = mock(async () => {});
-const tokens = { get: async () => undefined, set: async () => {}, del } as unknown as TokenService;
+const account = {
+  username: "alice",
+  password: "secret",
+  games: [730],
+  online: false,
+}
+const del = mock(async () => {})
+const tokens = {
+  get: async () => undefined,
+  set: async () => {},
+  del,
+} as unknown as TokenService
 
 function createBot() {
-  const bot = new Bot(account, tokens, "./.steam");
-  return { bot, steam: bot.steam as unknown as FakeSteam };
+  const bot = new Bot(account, tokens, "./.steam")
+  return { bot, steam: bot.steam as unknown as FakeSteam }
 }
 
 async function waitFor(condition: () => boolean): Promise<void> {
   for (let i = 0; i < 100; i++) {
-    if (condition()) return;
-    await Bun.sleep(5);
+    if (condition()) return
+    await Bun.sleep(5)
   }
-  throw new Error("Timed out waiting for condition");
+  throw new Error("Timed out waiting for condition")
 }
 
 beforeEach(() => {
-  FakeSteam.outcomes = [];
-  del.mockClear();
-});
+  FakeSteam.outcomes = []
+  del.mockClear()
+})
 
 describe("Bot.run", () => {
   test("logs in once", async () => {
-    const { bot, steam } = createBot();
-    bot.run();
+    const { bot, steam } = createBot()
+    bot.run()
 
-    await waitFor(() => steam.steamID !== null);
-    expect(steam.logOnCalls).toBe(1);
-  });
+    await waitFor(() => steam.steamID !== null)
+    expect(steam.logOnCalls).toBe(1)
+  })
 
   test("stops without retrying on a fatal login error", async () => {
-    FakeSteam.outcomes = [FakeSteam.EResult.InvalidPassword];
-    const { bot, steam } = createBot();
+    FakeSteam.outcomes = [FakeSteam.EResult.InvalidPassword]
+    const { bot, steam } = createBot()
 
-    await bot.run();
+    await bot.run()
 
-    expect(steam.logOnCalls).toBe(1);
-    expect(del).toHaveBeenCalledTimes(1);
-  });
+    expect(steam.logOnCalls).toBe(1)
+    expect(del).toHaveBeenCalledTimes(1)
+  })
 
   test("logs in again after a dropped connection and keeps the token", async () => {
-    const { bot, steam } = createBot();
-    bot.run();
-    await waitFor(() => steam.steamID !== null);
+    const { bot, steam } = createBot()
+    bot.run()
+    await waitFor(() => steam.steamID !== null)
 
-    steam.fail(FakeSteam.EResult.NoConnection);
+    steam.fail(FakeSteam.EResult.NoConnection)
 
-    await waitFor(() => steam.logOnCalls === 2 && steam.steamID !== null);
-    expect(del).not.toHaveBeenCalled();
-  });
+    await waitFor(() => steam.logOnCalls === 2 && steam.steamID !== null)
+    expect(del).not.toHaveBeenCalled()
+  })
 
   test("deletes the token once when it is rejected after login", async () => {
-    const { bot, steam } = createBot();
-    bot.run();
-    await waitFor(() => steam.steamID !== null);
+    const { bot, steam } = createBot()
+    bot.run()
+    await waitFor(() => steam.steamID !== null)
 
-    steam.fail(FakeSteam.EResult.AccessDenied);
+    steam.fail(FakeSteam.EResult.AccessDenied)
 
-    await waitFor(() => steam.logOnCalls === 2 && steam.steamID !== null);
-    expect(del).toHaveBeenCalledTimes(1);
-  });
+    await waitFor(() => steam.logOnCalls === 2 && steam.steamID !== null)
+    expect(del).toHaveBeenCalledTimes(1)
+  })
 
   test("stops and keeps the token when the session is replaced", async () => {
-    const { bot, steam } = createBot();
-    const running = bot.run();
-    await waitFor(() => steam.steamID !== null);
+    const { bot, steam } = createBot()
+    const running = bot.run()
+    await waitFor(() => steam.steamID !== null)
 
-    steam.fail(FakeSteam.EResult.LogonSessionReplaced);
+    steam.fail(FakeSteam.EResult.LogonSessionReplaced)
 
-    await running;
-    expect(steam.logOnCalls).toBe(1);
-    expect(del).not.toHaveBeenCalled();
-  });
-});
+    await running
+    expect(steam.logOnCalls).toBe(1)
+    expect(del).not.toHaveBeenCalled()
+  })
+})
+
+describe("Bot.syncGames", () => {
+  test("names the game another session is playing", async () => {
+    const { bot } = createBot()
+    consoleLog.mockClear()
+
+    await bot.syncGames(true, 1085660)
+
+    expect(consoleLog).toHaveBeenCalledTimes(1)
+    expect(consoleLog.mock.calls[0]![0]).toContain(
+      "Another session is playing Destiny 2",
+    )
+  })
+})

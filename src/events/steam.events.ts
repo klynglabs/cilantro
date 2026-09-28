@@ -1,13 +1,14 @@
-import type Steam from "steam-user";
+import type Steam from "steam-user"
 
-import type { Bot } from "@/bot";
-import { withStdinLock } from "@/utils/stdin-lock";
+import type { Bot } from "@/bot"
+
+import { withStdinLock } from "@/utils/stdin-lock"
 
 type EventHandler<K extends keyof Steam.Events> = (
   ...args: Steam.Events[K]
-) => void | Promise<void>;
+) => void | Promise<void>
 
-type EventHandlerMap = { [K in keyof Steam.Events]?: EventHandler<K> };
+type EventHandlerMap = { [K in keyof Steam.Events]?: EventHandler<K> }
 
 export class SteamEvents {
   constructor(private readonly bot: Bot) {}
@@ -16,7 +17,7 @@ export class SteamEvents {
     playingState: this.onPlayingState.bind(this),
     steamGuard: this.onSteamGuard.bind(this),
     refreshToken: this.onRefreshToken.bind(this),
-  };
+  }
 
   bind(): void {
     for (const [event, handler] of Object.entries(this.handlers) as [
@@ -24,19 +25,19 @@ export class SteamEvents {
       (...args: any[]) => void | Promise<void>,
     ][]) {
       this.bot.steam.on(event, (...args) => {
-        const result = handler(...args);
+        const result = handler(...args)
         if (result instanceof Promise) {
           result.catch((error) =>
             this.bot.logger.error(`Unhandled error in '${event}' event`, error),
-          );
+          )
         }
-      });
+      })
     }
   }
 
-  private onPlayingState(blocked: boolean, appId: number): void {
-    if (!blocked && appId !== 0) return;
-    this.bot.syncGames(blocked);
+  private async onPlayingState(blocked: boolean, appId: number): Promise<void> {
+    if (!blocked && appId !== 0) return
+    await this.bot.syncGames(blocked, appId)
   }
 
   private async onSteamGuard(
@@ -44,25 +45,25 @@ export class SteamEvents {
     callback: (code: string) => void,
   ): Promise<void> {
     await withStdinLock(async () => {
-      this.bot.logger.warn("Enter Steam Guard code");
+      this.bot.logger.warn("Enter Steam Guard code")
 
-      let provided = false;
+      let provided = false
       for await (const line of console) {
-        const code = line?.trim();
-        if (!code) process.exit(1);
-        callback(code);
-        provided = true;
-        break;
+        const code = line?.trim()
+        if (!code) process.exit(1)
+        callback(code)
+        provided = true
+        break
       }
 
       if (!provided) {
-        this.bot.logger.error("Steam Guard: stdin is closed, cannot read code");
-        process.exit(1);
+        this.bot.logger.error("Steam Guard: stdin is closed, cannot read code")
+        process.exit(1)
       }
-    });
+    })
   }
 
   private async onRefreshToken(token: string): Promise<void> {
-    await this.bot.tokens.set(this.bot.account.username, token);
+    await this.bot.tokens.set(this.bot.account.username, token)
   }
 }

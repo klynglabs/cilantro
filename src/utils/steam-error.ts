@@ -1,6 +1,6 @@
-import Steam from "steam-user";
+import Steam from "steam-user"
 
-export type SteamError = Error & { eresult?: Steam.EResult };
+export type SteamError = Error & { eresult?: Steam.EResult }
 
 const KEEP_TOKEN_RESULTS = new Set([
   Steam.EResult.Invalid,
@@ -13,14 +13,15 @@ const KEEP_TOKEN_RESULTS = new Set([
   Steam.EResult.LogonSessionReplaced,
   Steam.EResult.TryAnotherCM,
   Steam.EResult.RateLimitExceeded,
-]);
+])
 
 export function invalidatesToken({ eresult }: SteamError): boolean {
-  return eresult !== undefined && !KEEP_TOKEN_RESULTS.has(eresult);
+  return eresult !== undefined && !KEEP_TOKEN_RESULTS.has(eresult)
 }
 
 export function isFatal({ eresult }: SteamError): boolean {
   return (
-    eresult === Steam.EResult.InvalidPassword || eresult === Steam.EResult.LogonSessionReplaced
-  );
+    eresult === Steam.EResult.InvalidPassword ||
+    eresult === Steam.EResult.LogonSessionReplaced
+  )
 }

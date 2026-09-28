@@ -1,35 +1,35 @@
-import { mkdirSync } from "node:fs";
-import { rm } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdirSync } from "node:fs"
+import { rm } from "node:fs/promises"
+import { join } from "node:path"
 
-import { convertRelativePath } from "@/utils/path";
+import { convertRelativePath } from "@/utils/path"
 
 export class TokenService {
-  private readonly dir: string;
+  private readonly dir: string
 
   constructor(tokensPath: string) {
-    this.dir = convertRelativePath(tokensPath);
-    mkdirSync(this.dir, { recursive: true });
+    this.dir = convertRelativePath(tokensPath)
+    mkdirSync(this.dir, { recursive: true })
   }
 
   async get(username: string): Promise<string | undefined> {
     try {
-      const text = await Bun.file(this.path(username)).text();
-      return text.trim() || undefined;
+      const text = await Bun.file(this.path(username)).text()
+      return text.trim() || undefined
     } catch {
-      return undefined;
+      return undefined
     }
   }
 
   async set(username: string, token: string): Promise<void> {
-    await Bun.write(this.path(username), token);
+    await Bun.write(this.path(username), token)
   }
 
   async del(username: string): Promise<void> {
-    await rm(this.path(username), { force: true });
+    await rm(this.path(username), { force: true })
   }
 
   private path(username: string): string {
-    return join(this.dir, encodeURIComponent(username));
+    return join(this.dir, encodeURIComponent(username))
   }
 }

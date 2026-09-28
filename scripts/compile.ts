@@ -1,4 +1,4 @@
-import { build } from "bun";
+import { build } from "bun"
 
 const result = await build({
   entrypoints: ["src/index.ts"],
@@ -15,11 +15,11 @@ const result = await build({
     },
   },
   minify: true,
-});
+})
 
 if (!result.success) {
-  for (const log of result.logs) console.error(log);
-  process.exit(1);
+  for (const log of result.logs) console.error(log)
+  process.exit(1)
 }
 
-console.log("Built successfully");
+console.log("Built successfully")

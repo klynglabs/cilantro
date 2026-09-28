@@ -1,5 +1,5 @@
-import { resolve } from "node:path";
+import { resolve } from "node:path"
 
 export function convertRelativePath(path: string): string {
-  return resolve(path);
+  return resolve(path)
 }
