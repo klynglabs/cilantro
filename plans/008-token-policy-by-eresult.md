@@ -7,8 +7,8 @@
 > in `plans/README.md`.
 >
 > **Drift check (run first)**: `git diff --stat 56ffc99 -- src/events/steam.events.ts src/utils/`
-> Expected: `src/events/steam.events.ts` (two `import type` lines swapped by
-> plan 004), `src/utils/logger.ts` (plan 006) and new `*.test.ts` files from
+> Expected: `src/events/steam.events.ts` (import lines regrouped by
+> plan 004, `2 +-`), `src/utils/logger.ts` (plan 006) and new `*.test.ts` files from
 > plans 005/006. Plan 006 must be DONE. If `onError` differs from the excerpt
 > below, STOP.
 
@@ -56,11 +56,17 @@ errors that have no `eresult` at all (e.g. `No Steam servers available`).
 - `src/events/steam.events.ts` imports (after plan 004):
 
   ```ts
-  import type { Bot } from "@/bot";
   import type Steam from "steam-user";
 
+  import type { Bot } from "@/bot";
   import { withStdinLock } from "@/utils/stdin-lock";
   ```
+
+- Import convention (oxfmt `sortImports`): groups separated by a blank line —
+  built-ins (`bun:*`, `node:*`), then packages, then `@/` aliases. Within a
+  group, sorted by source; an `import type` sits directly before the value
+  import from the same source (see `src/utils/logger.ts`). If `format:check`
+  disagrees with any import block below, `bun run format` is authoritative.
 
 - `src/events/steam.events.ts` `onError` (lines ~38–59):
 
@@ -170,11 +176,11 @@ the transient cases.
 ### Step 2: Create `src/utils/steam-error.test.ts`
 
 ```ts
-import type { SteamError } from "@/utils/steam-error";
-
 import { describe, expect, test } from "bun:test";
+
 import Steam from "steam-user";
 
+import type { SteamError } from "@/utils/steam-error";
 import { invalidatesToken } from "@/utils/steam-error";
 
 function steamError(eresult?: Steam.EResult): SteamError {
@@ -221,12 +227,11 @@ In `src/events/steam.events.ts`:
 1. Imports become (`Steam` is now a value import because the switch uses the enum):
 
    ```ts
-   import type { Bot } from "@/bot";
-   import type { SteamError } from "@/utils/steam-error";
-
    import Steam from "steam-user";
 
+   import type { Bot } from "@/bot";
    import { withStdinLock } from "@/utils/stdin-lock";
+   import type { SteamError } from "@/utils/steam-error";
    import { invalidatesToken } from "@/utils/steam-error";
    ```
 
