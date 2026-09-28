@@ -1,9 +1,7 @@
-import Steam from "steam-user";
+import type Steam from "steam-user";
 
 import type { Bot } from "@/bot";
 import { withStdinLock } from "@/utils/stdin-lock";
-import type { SteamError } from "@/utils/steam-error";
-import { invalidatesToken } from "@/utils/steam-error";
 
 type EventHandler<K extends keyof Steam.Events> = (
   ...args: Steam.Events[K]
@@ -15,7 +13,6 @@ export class SteamEvents {
   constructor(private readonly bot: Bot) {}
 
   private readonly handlers: EventHandlerMap = {
-    error: this.onError.bind(this),
     playingState: this.onPlayingState.bind(this),
     steamGuard: this.onSteamGuard.bind(this),
     refreshToken: this.onRefreshToken.bind(this),
@@ -35,29 +32,6 @@ export class SteamEvents {
         }
       });
     }
-  }
-
-  private async onError(error: SteamError): Promise<void> {
-    switch (error.eresult) {
-      case Steam.EResult.LogonSessionReplaced:
-        this.bot.logger.error("Session replaced");
-        return process.exit(1);
-      case Steam.EResult.InvalidPassword:
-        this.bot.logger.error("Invalid credentials");
-        await this.bot.tokens.del(this.bot.account.username);
-        return process.exit(1);
-      case Steam.EResult.LoggedInElsewhere:
-        this.bot.logger.warn("Logged in elsewhere");
-        break;
-      case Steam.EResult.NoConnection:
-        this.bot.logger.error("Connection dropped");
-        break;
-      default:
-        this.bot.logger.error(error.message);
-        if (invalidatesToken(error)) await this.bot.tokens.del(this.bot.account.username);
-    }
-
-    await this.bot.reconnect();
   }
 
   private onPlayingState(blocked: boolean, appId: number): void {
