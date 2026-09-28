@@ -1,4 +1,4 @@
-# Plan 004: Make `bun run format` produce the style the code is already written in
+# Plan 004: Replace Prettier with oxfmt + oxlint, matching the style the code is already written in
 
 > **Executor instructions**: Follow this plan step by step. Run every
 > verification command and confirm the expected result before moving to the
@@ -6,11 +6,9 @@
 > report — do not improvise. When done, update the status row for this plan
 > in `plans/README.md`.
 >
-> **Drift check (run first)**: `git diff --stat 56ffc99 -- prettier.config.ts package.json .gitattributes .prettierignore CONTRIBUTING.md`
-> Expected: only `package.json` may show up (script changes for `build`/`compile`
-> that the maintainer made after this plan was written). If `prettier.config.ts`
-> shows up, or `package.json` no longer contains the `format` script shown
-> below, treat it as a STOP condition.
+> **Drift check (run first)**: `git diff --stat 2b37348 -- prettier.config.ts package.json .gitattributes .oxfmtrc.json src/bot.ts src/events/steam.events.ts src/utils/logger.ts tsconfig.json`
+> Expected: empty output. If anything shows up, compare the files with the
+> "Current state" excerpts below and STOP on a mismatch.
 
 ## Status
 
@@ -19,7 +17,7 @@
 - **Risk**: LOW
 - **Depends on**: none
 - **Category**: dx
-- **Planned at**: commit `56ffc99`, 2026-09-28
+- **Planned at**: commit `2b37348`, 2026-09-28 (revised: Prettier → oxfmt/oxlint at the maintainer's request)
 
 ## Project rules (apply to every change in this plan)
 
@@ -39,13 +37,20 @@ file uses double quotes, semicolons and ~100-column lines. Running
 `bun run format` today would rewrite the whole codebase into a style nobody
 writes, so nobody can run it, and CONTRIBUTING.md tells contributors to run it.
 Prettier is also not a devDependency (the script uses `bunx`, so the version
-floats), and the import-order setting glues `node:` imports onto type imports.
-After this plan, `bun run format` is a near no-op on the existing code and
-`bun run format:check` can gate every later change.
+floats). There is no linter at all.
+
+The maintainer chose the Oxc toolchain: **oxfmt** (Prettier-compatible
+formatter) and **oxlint** (linter). oxfmt's defaults are already the code's
+style (double quotes, semicolons, `printWidth` 100, trailing commas, 2-space
+indent), and it has built-in import sorting, so the Prettier plugin goes away.
+oxlint's default rule set reports zero diagnostics on the current code.
+
+After this plan, `bun run format` is a near no-op on the existing code, and
+`bun run format:check` and `bun run lint` can gate every later change.
 
 ## Current state
 
-- `prettier.config.ts` (whole file):
+- `prettier.config.ts` (whole file — will be deleted):
 
   ```ts
   const config = {
@@ -60,168 +65,217 @@ After this plan, `bun run format` is a near no-op on the existing code and
   export default config
   ```
 
-- `package.json` scripts include `"format": "bunx prettier . --write"`.
-  devDependencies include `@ianvs/prettier-plugin-sort-imports` but not
-  `prettier`.
-- The code style that is actually used (exemplar `src/utils/retry.ts`):
-  double quotes, semicolons, trailing commas, 2-space indent, lines up to 100
-  columns (see the `getCredentials` signature in `src/bot.ts`, which is 99
-  characters wide).
+- `package.json` `scripts` (whole block):
+
+  ```json
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "build": "bun scripts/build.ts",
+    "compile": "bun scripts/compile.ts",
+    "start": "bun build/index.js",
+    "format": "bunx prettier . --write"
+  },
+  ```
+
+  `devDependencies` contain `@ianvs/prettier-plugin-sort-imports`, `@tsconfig/bun`,
+  `@types/bun`, `@types/steam-user`, `typescript`. No `prettier`, `oxfmt` or `oxlint`.
+- The import blocks oxfmt will reorder (verified against oxfmt 0.71.0 with the
+  config in Step 3):
+  - `src/bot.ts` lines 5–6: `import type { Account } from "@/schema/account.schema";`
+    currently sits *above* `import { SteamEvents } from "@/events/steam.events";`;
+    oxfmt swaps them (sorted by path: `@/events` < `@/schema`).
+  - `src/events/steam.events.ts` lines 1–4:
+    ```ts
+    import type Steam from "steam-user";
+    import type { Bot } from "@/bot";
+
+    import { withStdinLock } from "@/utils/stdin-lock";
+    ```
+    oxfmt moves the blank line so `steam-user` (external) is separated from the
+    two `@/` (internal) imports.
+  - `src/utils/logger.ts` lines 1–3: the blank line between
+    `import type { ChalkInstance } from "chalk";` and `import chalk from "chalk";`
+    is removed (same module, same group).
+- `tsconfig.json` has trailing commas (after `["./src/*"]`, the `paths` object and
+  the `exclude` array); oxfmt removes them. `tsc` accepts both forms.
+- `CLAUDE.md` has lists directly under a text line; oxfmt inserts a blank line
+  before each of the 5 lists. Content is unchanged.
 - Git index stores every file with LF, but `core.autocrlf=true` on the
-  maintainer's machine and there is no `.gitattributes`, so several working
-  copies are CRLF (`git ls-files --eol` shows `w/crlf` for e.g.
-  `src/utils/stdin-lock.ts`). Prettier's default `endOfLine` is `lf`, so
-  `--check` would flag those files on Windows.
-- There is no `.prettierignore`. Prettier 3 already skips `.gitignore`d paths
-  (`build`, `node_modules`, `config.json`, …).
+  maintainer's machine and there is no `.gitattributes`, so working copies can be
+  CRLF (`git ls-files --eol` shows `w/crlf` for e.g. `src/utils/stdin-lock.ts`).
+  oxfmt's `endOfLine` is `lf`, and `oxfmt --check` fails on CRLF files.
+- oxfmt and oxlint both skip `.gitignore`d paths (`build`, `node_modules`,
+  `config.json`, …). `plans/` is tracked, holds advisor documents, and must be
+  excluded from formatting.
 
 ## Commands you will need
 
-| Purpose       | Command                                   | Expected on success                           |
-|---------------|-------------------------------------------|-----------------------------------------------|
-| Install       | `bun install`                             | exit 0                                        |
-| Format        | `bun run format`                          | exit 0                                        |
-| Format check  | `bun run format:check`                    | `All matched files use Prettier code style!`  |
-| Typecheck     | `bunx tsc --noEmit`        | exit 0, no output                             |
+| Purpose       | Command                  | Expected on success                                 |
+|---------------|--------------------------|-----------------------------------------------------|
+| Install       | `bun install`            | exit 0                                              |
+| Format        | `bun run format`         | exit 0                                              |
+| Format check  | `bun run format:check`   | `All matched files use the correct format.`, exit 0 |
+| Lint          | `bun run lint`           | exit 0, no output                                   |
+| Typecheck     | `bunx tsc --noEmit`      | exit 0, no output                                   |
 
 ## Scope
 
-**In scope** (the only files you should modify or create):
-- `prettier.config.ts`
-- `package.json`, `bun.lock` (via `bun add` only)
+**In scope** (the only files you should modify, create or delete):
+- `prettier.config.ts` (delete)
+- `package.json`, `bun.lock` (dependencies via `bun add` / `bun remove` only; `scripts` by hand)
+- `.oxfmtrc.json` (create)
 - `.gitattributes` (create)
-- `.prettierignore` (create)
 - Files rewritten by `bun run format` in Step 5 — only the expected list there.
 
 **Out of scope** (do NOT touch):
 - Any hand edit to `src/**` — formatting changes come only from running the formatter.
-- `tsconfig.json` settings (the formatter will only remove trailing commas).
-- ESLint or any other new tool — not requested.
+- `CONTRIBUTING.md` — `bun run format` stays valid; plan 005 rewrites that section and adds `lint`.
+- `plans/**`.
+- An `.oxlintrc.json` — oxlint's defaults are enough; do not create one.
+- `tsconfig.json` settings (the formatter only removes trailing commas).
 
 ## Git workflow
 
-- Branch: `advisor/004-align-formatter-with-code`
+- Branch: `advisor/004-oxfmt-oxlint`
 - Conventional commits, matching `git log` (e.g. `fix(bot): serialize steam guard stdin reads (#2)`).
-  Suggested: `chore: align prettier config with code style` and
-  `style: apply prettier`.
+  Two commits: `chore: replace prettier with oxfmt and oxlint` (Steps 1–4) and
+  `style: apply oxfmt` (Step 5).
 - Do NOT push or open a PR unless instructed.
 
 ## Steps
 
-### Step 1: Add Prettier as a devDependency
+### Step 1: Swap the dependencies
 
-Run `bun add -d prettier`.
+Run:
 
-**Verify**: `bunx prettier --version` → prints `3.x.y`;
-`grep '"prettier"' package.json` → one line inside `devDependencies`.
-
-### Step 2: Replace `prettier.config.ts`
-
-Replace the whole file with:
-
-```ts
-const config = {
-  plugins: ["@ianvs/prettier-plugin-sort-imports"],
-  importOrder: [
-    "<TYPES>",
-    "",
-    "<BUILTIN_MODULES>",
-    "",
-    "<THIRD_PARTY_MODULES>",
-    "",
-    "^@/(.*)$|^@$",
-  ],
-  importOrderParserPlugins: ["typescript"],
-  importOrderTypeScriptVersion: "5.0.0",
-  printWidth: 100,
-};
-
-export default config;
+```
+bun remove @ianvs/prettier-plugin-sort-imports
+bun add -d oxfmt oxlint
 ```
 
-`singleQuote` and `semi` are removed so Prettier's defaults (double quotes,
-semicolons) apply. `<BUILTIN_MODULES>` gets its own group so `node:` imports
-are separated from type imports.
+**Verify**:
+- `bunx oxfmt --version` → prints `0.x.y` (0.71.0 or later 0.x)
+- `bunx oxlint --version` → prints `1.x.y`
+- `grep -c "prettier" package.json` → `1` (only the `format` script, fixed in Step 4)
 
-**Verify**: `bunx prettier --check src/utils/retry.ts` → `All matched files use Prettier code style!`
+### Step 2: Delete `prettier.config.ts`
 
-### Step 3: Update the scripts in `package.json`
+`git rm prettier.config.ts`
 
-Change `"format"` and add `"format:check"` right after it:
+**Verify**: `ls prettier.config.ts` → "No such file or directory".
+
+### Step 3: Create `.oxfmtrc.json`
+
+Exact content:
 
 ```json
-"format": "prettier . --write",
-"format:check": "prettier . --check",
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "sortImports": true,
+  "sortPackageJson": false,
+  "ignorePatterns": ["plans/"]
+}
 ```
 
-Leave every other script unchanged.
+Why each key: formatting options are all left at oxfmt's defaults because those
+defaults already match the code. `sortImports: true` replaces the Prettier
+import-sorting plugin (default groups: builtin → external → `@/` internal,
+blank line between groups). `sortPackageJson: false` because oxfmt otherwise
+reorders `package.json` keys and keywords, which is churn nobody asked for.
+`plans/` holds advisor documents, not source.
 
-**Verify**: `bun run format:check` runs (it may still report files; that's
-fixed in Step 5) and does not print `command not found`.
+**Verify**: `bunx oxfmt --check src/utils/retry.ts` → `All matched files use the correct format.`
+(If this fails only because the file is CRLF, that's expected until Step 4/5 — check
+with `file src/utils/retry.ts`; if it says CRLF, move on.)
 
-### Step 4: Add `.gitattributes` and `.prettierignore`
+### Step 4: Scripts and `.gitattributes`
 
-`.gitattributes` (one line):
+In `package.json`, replace the `"format"` line and add two scripts right after it,
+so the end of `scripts` reads:
+
+```json
+    "start": "bun build/index.js",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint --deny-warnings"
+  },
+```
+
+Leave every other script unchanged. `--deny-warnings` is needed because
+oxlint's default rules report as warnings and exit 0.
+
+Create `.gitattributes` (one line):
 
 ```
 * text=auto eol=lf
 ```
 
-`.prettierignore` (one line — `plans/` holds advisor documents that are edited
-by tools, not source):
+**Verify**:
+- `git check-attr eol -- src/bot.ts` → `src/bot.ts: eol: lf`
+- `bun run lint` → exit 0, no output
+- `grep -c "prettier" package.json` → `0`
 
-```
-plans/
-```
-
-**Verify**: `git check-attr eol -- src/bot.ts` → `src/bot.ts: eol: lf`
+Commit: `chore: replace prettier with oxfmt and oxlint`.
 
 ### Step 5: Run the formatter
 
-Run `bun run format`, then `git add -A` and `git diff --cached --stat`.
+Run `bun run format`, then `git add --renormalize .`, `git add -A` and
+`git diff --cached --stat`.
 
-`git status` before staging may also list files whose working copy was only
-converted from CRLF to LF (e.g. `README.md`, `src/utils/stdin-lock.ts`). The
-index already stores LF, so after `git add -A` they drop out of the diff.
+`git status` before staging may list many files whose working copy only changed
+from CRLF to LF. The index already stores LF, so after staging they drop out of
+the diff.
 
-Expected content changes in `git diff --cached --stat`, besides the files from
-Steps 1–4, and nothing else:
-- `CLAUDE.md` — blank lines inserted before lists
-- `src/bot.ts` — `import type { Account } …` moves to the top, followed by a blank line
-- `src/config.ts` — `import configFile from "../config.json";` moves to the top
-- `src/events/steam.events.ts` — the two `import type` lines swap order
+Expected in `git diff --cached --stat`, and nothing else:
+- `CLAUDE.md` — 5 blank lines inserted before lists
+- `src/bot.ts` — the two import lines described in "Current state" swap
+- `src/events/steam.events.ts` — blank line moves (external vs internal group)
+- `src/utils/logger.ts` — one blank line removed between the two `chalk` imports
 - `tsconfig.json` — trailing commas removed
 
+Inspect `git diff --cached -- src` and confirm every hunk is an import line
+move or a blank line.
+
 **Verify**:
-- `bun run format:check` → `All matched files use Prettier code style!`
+- `bun run format:check` → `All matched files use the correct format.`, exit 0
+- `bun run lint` → exit 0, no output
 - `bunx tsc --noEmit` → exit 0
 - `git ls-files --eol | grep -c "i/crlf"` → `0`
+
+Commit: `style: apply oxfmt`.
 
 ## Test plan
 
 No runtime behavior changes; there is no test suite yet (plan 005 adds one).
-The gates are `format:check` and `tsc --noEmit`.
+The gates are `format:check`, `lint` and `tsc --noEmit`.
 
 ## Done criteria
 
-- [ ] `bun run format:check` prints `All matched files use Prettier code style!`
+- [ ] `bun run format:check` exits 0 and prints `All matched files use the correct format.`
+- [ ] `bun run lint` exits 0 with no output
 - [ ] `bunx tsc --noEmit` exits 0
-- [ ] `prettier.config.ts` contains no `singleQuote` and no `semi`
-- [ ] `package.json` devDependencies contain `prettier`; scripts contain `format` and `format:check` without `bunx`
-- [ ] `.gitattributes` and `.prettierignore` exist with the contents above
-- [ ] `git diff --stat main...HEAD` lists only in-scope files
+- [ ] `prettier.config.ts` does not exist; `grep -ci prettier package.json` → `0`
+- [ ] `package.json` devDependencies contain `oxfmt` and `oxlint`; scripts contain `format`, `format:check`, `lint` exactly as in Step 4
+- [ ] `.oxfmtrc.json` and `.gitattributes` exist with the contents above; no `.oxlintrc.json`
+- [ ] `git diff --stat main...HEAD` lists only: `.gitattributes`, `.oxfmtrc.json`, `CLAUDE.md`, `bun.lock`, `package.json`, `prettier.config.ts`, `src/bot.ts`, `src/events/steam.events.ts`, `src/utils/logger.ts`, `tsconfig.json`
 - [ ] `plans/README.md` status row updated
 
 ## STOP conditions
 
 - Step 5 modifies a file not in the expected list, or changes anything other
-  than import order / whitespace / trailing commas in a `.ts` file.
+  than import order / blank lines in a `.ts` file.
+- `bun run lint` reports any diagnostic (don't fix source code, and don't
+  disable rules — report the output).
 - `tsc --noEmit` fails after formatting.
-- `bun add -d prettier` installs a major version other than 3.
+- `bun add -d oxfmt` installs a version ≥ 1.0 and the Step 3 verify fails
+  (config keys may have changed).
 
 ## Maintenance notes
 
-- `format:check` is the gate that later plans (and a future CI job) rely on.
+- `format:check` and `lint` are the gates later plans (and a future CI job) rely on.
+- oxfmt is pre-1.0: `^0.x` in `package.json` pins the minor version. Bumping it
+  can change output; run `bun run format` and review the diff as its own commit.
 - `.gitattributes` overrides `core.autocrlf` for this repo; contributors on
   Windows get LF working copies after their next checkout.
-- If ESLint is added later, add `eslint-config-prettier` so the two don't fight.
+- To tighten linting later, add `.oxlintrc.json` (`bunx oxlint --init`) rather
+  than passing rule flags in the script.

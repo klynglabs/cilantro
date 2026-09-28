@@ -25,7 +25,7 @@ documents copying `config.example.json` to `config.json`.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| [004](004-align-formatter-with-code.md) | Make `bun run format` produce the style the code is already written in | P2 | S | — | TODO |
+| [004](004-align-formatter-with-code.md) | Replace Prettier with oxfmt + oxlint, matching the existing code style | P2 | S | — | DONE (branch `advisor/004-oxfmt-oxlint`, awaiting merge) |
 | [005](005-verification-baseline.md) | Add `typecheck` and `test` scripts with a first unit-test suite | P1 | S | 004 | TODO |
 | [006](006-logger-errors-and-idempotent-token-delete.md) | Log Errors with their stack; make deleting a missing token a no-op | P1 | S | 005 | TODO |
 | [007](007-load-config-at-runtime.md) | Read `config.json` at runtime instead of bundling it into the build | P1 | S | 005 | TODO |
@@ -36,12 +36,15 @@ Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` (add one-line reason)
 
 ## Dependency notes
 
-- **004 first** although it is P2: every later plan uses `bun run format:check`
+- **004 first** although it is P2: every later plan uses `bun run format:check` (oxfmt)
   as a gate, and 004 reorders imports in files the later plans quote.
 - **005 before everything else**: it adds `bun run typecheck` / `bun run test`
   and the test files that 006 and 009 extend. Expected test counts assume the
   order above: 11 after 005, 15 after 006, 19 after 007, 34 after 008, 45 after 009.
   If 007 is skipped or reordered, subtract/shift its 4 tests.
+- **Fresh worktrees lack `config.json`** (gitignored) until plan 007 lands, so
+  `tsc` fails there with TS2307 on `../config.json`. Copy `config.example.json`
+  to `config.json` in the worktree before running `typecheck`.
 - **006 before 008/009**: without the idempotent `del`, a first-time
   `InvalidPassword` throws before anything else runs.
 - **007 is independent** of 006/008/009 and can run in parallel on its own branch.

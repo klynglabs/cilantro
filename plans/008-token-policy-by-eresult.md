@@ -112,7 +112,7 @@ errors that have no `eresult` at all (e.g. `No Steam servers available`).
 |--------------|-------------------------|----------------------------------------------|
 | Typecheck    | `bun run typecheck`     | exit 0                                       |
 | Tests        | `bun run test`          | `0 fail`                                     |
-| Format check | `bun run format:check`  | `All matched files use Prettier code style!` |
+| Format check | `bun run format:check`  | `All matched files use the correct format.` |
 
 ## Scope
 

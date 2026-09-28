@@ -121,7 +121,7 @@ Why the env lookup moves into the schema: the file is now `unknown` JSON, so
 | Typecheck    | `bun run typecheck`     | exit 0                                       |
 | Tests        | `bun run test`          | `0 fail`                                     |
 | Build        | `bun run build`         | `Built successfully`                         |
-| Format check | `bun run format:check`  | `All matched files use Prettier code style!` |
+| Format check | `bun run format:check`  | `All matched files use the correct format.` |
 
 ## Scope
 

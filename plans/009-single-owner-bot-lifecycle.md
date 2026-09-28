@@ -199,7 +199,7 @@ stop. `SteamEvents` keeps only the non-error handlers.
 | Typecheck    | `bun run typecheck`     | exit 0                                       |
 | Tests        | `bun run test`          | `0 fail`                                     |
 | Build        | `bun run build`         | `Built successfully`                         |
-| Format check | `bun run format:check`  | `All matched files use Prettier code style!` |
+| Format check | `bun run format:check`  | `All matched files use the correct format.` |
 
 Never run `bun run start` or `bun run dev` as a test: with a real `config.json`
 and `.env` they log into Steam.

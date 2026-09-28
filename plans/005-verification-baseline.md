@@ -7,8 +7,8 @@
 > in `plans/README.md`.
 >
 > **Drift check (run first)**: `git diff --stat 56ffc99 -- src/utils/retry.ts src/utils/stdin-lock.ts src/services/token.service.ts CONTRIBUTING.md package.json`
-> Plan 004 must be DONE first; its changes to `package.json` (prettier,
-> `format:check`) are expected, as is a change to the `build`/`compile`
+> Plan 004 must be DONE first; its changes to `package.json` (oxfmt, oxlint,
+> `format:check`, `lint`) are expected, as is a change to the `build`/`compile`
 > scripts. Any change to the three `src/` files means the excerpts below may be
 > stale: compare them with the live code and STOP on a mismatch.
 
@@ -44,7 +44,7 @@ pattern to copy and a baseline that must stay green.
 ## Current state
 
 - `package.json` scripts after plan 004:
-  `dev`, `build`, `compile`, `start`, `format`, `format:check`. No `typecheck`, no `test`.
+  `dev`, `build`, `compile`, `start`, `format`, `format:check`, `lint`. No `typecheck`, no `test`.
   `typescript` is already a devDependency; `bun test` is built into Bun (v1.4.2).
 - `tsconfig.json` includes `**/*.ts`, so `*.test.ts` files are typechecked too.
   Path alias `@/*` → `./src/*` works in tests.
@@ -104,7 +104,7 @@ pattern to copy and a baseline that must stay green.
 |--------------|-------------------------|----------------------------------------------|
 | Typecheck    | `bun run typecheck`     | exit 0, no output                            |
 | Tests        | `bun run test`          | `0 fail`                                     |
-| Format check | `bun run format:check`  | `All matched files use Prettier code style!` |
+| Format check | `bun run format:check`  | `All matched files use the correct format.` |
 
 ## Scope
 
@@ -132,7 +132,7 @@ pattern to copy and a baseline that must stay green.
 
 ### Step 1: Add the scripts
 
-In `package.json` `scripts`, add after `format:check`:
+In `package.json` `scripts`, add after `lint`:
 
 ```json
 "typecheck": "tsc --noEmit",
@@ -299,10 +299,11 @@ describe("TokenService", () => {
 Replace the body of the "Before Submitting" section (keep the heading) with:
 
 ````md
-Format, typecheck and test your code:
+Format, lint, typecheck and test your code:
 
 ```bash
 bun run format
+bun run lint
 bun run typecheck
 bun run test
 ```
@@ -315,7 +316,7 @@ bun run test
 **Verify**:
 - `bun run typecheck` → exit 0
 - `bun run test` → `11 pass`, `0 fail`
-- `bun run format:check` → `All matched files use Prettier code style!`
+- `bun run format:check` → `All matched files use the correct format.`
   (if it fails, run `bun run format` — it only reorders imports / wraps lines — and re-check)
 
 ## Test plan
